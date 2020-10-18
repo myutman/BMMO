@@ -105,7 +105,7 @@ def pc(params, model):
     lb = params['bmin']
     rb = params['bmax']
     prob, _ = pc_ab(range(la, ra + 1), range(lb, rb + 1), params, model)
-    prob = np.sum(prob * NORM, axis=(1, 2)) / ((ra - la + 1) * (rb - lb + 1)) / NORM
+    prob = np.sum(prob, axis=(1, 2)) / ((ra - la + 1) * (rb - lb + 1))
     val = np.array(list(range(0, ra + rb + 1)))
     return prob, val
     
@@ -174,8 +174,14 @@ def pd_b(b, params, model):
     prob_c_ab, _ = pc_ab(a, b, params, model)
     prob_c_b = prob_c_ab.transpose(2, 0, 1).sum(axis=-1) / (ra - la + 1)
     prob_c_b = prob_c_b.reshape(1, prob_c_b.shape[0], prob_c_b.shape[1])
+
     
     prob = (prob_c_b * prob_d_c).sum(axis=-1)
+    
+    print(f"prob.shape: {prob.shape}")
+    print(f"prob_c_b.shape: {prob_c_b.shape}")
+    print(f"prob_d_c.shape: {prob_d_c.shape}")
+
     val = np.array([[d1 for _ in b] for d1 in d])
     
     return prob, val
@@ -187,13 +193,18 @@ def pb_d(d, params, model):
     d = np.array(list(d))
     prob_d, _ = pd(params, model)
     prob_d = prob_d[d]
-    
+   
+ 
     prob_b = 1 / (rb - lb + 1)
     
     prob_d_b, _ = pd_b(b, params, model)
     prob_d_b = prob_d_b.transpose(1, 0)[:, d]
     
-    prob = (prob_d_b * NORM) * (prob_b * NORM) / ((prob_d * NORM).reshape(1, -1) + EPS) / NORM
+    print(f"prob_d_b.shape: {prob_d_b.shape}")
+    print(f"prob_d.shape: {prob_d.shape}")
+    print(f"d.shape: {d.shape}")
+
+    prob = prob_d_b * prob_b / (prob_d.reshape(1, *prob_d.shape) + EPS)
     val = np.array([[b1 for _ in d] for b1 in b])
     
     return prob, val
